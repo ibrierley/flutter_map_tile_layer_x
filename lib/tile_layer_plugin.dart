@@ -190,10 +190,10 @@ class _TileLayerState extends State<TileLayerX> {
   Tuple2<double, double> _wrapX;
   Tuple2<double, double> _wrapY;
   double _tileZoom;
-  Level _level;
+  LevelX _level;
   StreamSubscription _moveSub;
 
-  final Map<double, Level> _levels = {};
+  final Map<double, LevelX> _levels = {};
 
   final Map<String, DateTime> _outstandingTileLoads = {};
   final Map<String, DateTime> _recentTilesCompleted = {};
@@ -219,6 +219,7 @@ class _TileLayerState extends State<TileLayerX> {
     _housekeepingTimer.cancel();
     options.tileProvider.dispose();
   }
+
   void _handleMove() {
     setState(() {
       /// Not needed now, as we don't leave tiles hanging about, we just
@@ -243,7 +244,7 @@ class _TileLayerState extends State<TileLayerX> {
     _setZoomTransforms(center, zoom);
   }
 
-  Level _updateLevels() {
+  LevelX _updateLevels() {
     var zoom = _tileZoom;
     var maxZoom = options.maxZoom;
 
@@ -259,7 +260,7 @@ class _TileLayerState extends State<TileLayerX> {
     var map = this.map;
 
     if (level == null) {
-      level = _levels[zoom] = Level();
+      level = _levels[zoom] = LevelX();
       level.zIndex = options.maxZoom;
       var newOrigin = map.project(map.unproject(map.getPixelOrigin()), zoom);
       if (newOrigin != null) {
@@ -275,7 +276,7 @@ class _TileLayerState extends State<TileLayerX> {
     return level;
   }
 
-  void _setZoomTransform(Level level, LatLng center, double zoom) {
+  void _setZoomTransform(LevelX level, LatLng center, double zoom) {
     var scale = map.getZoomScale(zoom, level.zoom);
     var pixelOrigin = map.getNewPixelOrigin(center, zoom).round();
     if (level.origin == null) {
@@ -432,7 +433,7 @@ class _TileLayerState extends State<TileLayerX> {
                   /// could be possible if was in cache but not any more...
                   if (_recentTilesCompleted.containsKey(tileKey) &&
                       !_outstandingTileLoads.containsKey(tileKey)) {
-                    _backupTiles[tileKey] = Tile(backupCoords, false);
+                    _backupTiles[tileKey] = TileX(backupCoords, false);
                     haveBackup = true;
                   }
                 }
@@ -445,11 +446,11 @@ class _TileLayerState extends State<TileLayerX> {
 
     if (queue.isNotEmpty) {
       for (var i = 0; i < queue.length; i++) {
-        _tiles[_tileCoordsToKey(queue[i])] = Tile(_wrapCoords(queue[i]), true);
+        _tiles[_tileCoordsToKey(queue[i])] = TileX(_wrapCoords(queue[i]), true);
       }
     }
 
-    var tilesToRender = <Tile>[
+    var tilesToRender = <TileX>[
       for (var tile in _tiles.values)
         if ((tile.coords.z - _level.zoom).abs() <= 1) tile
     ];
@@ -464,7 +465,7 @@ class _TileLayerState extends State<TileLayerX> {
       return (a.distanceTo(tileCenter) - b.distanceTo(tileCenter)).toInt();
     });
 
-    var backupTilesToRender = <Tile>[
+    var backupTilesToRender = <TileX>[
       for (var tile in _backupTiles.values) tile
     ];
 
@@ -613,4 +614,20 @@ class _TileLayerState extends State<TileLayerX> {
     return Bounds(pixelCenter - halfSize, pixelCenter + halfSize);
   }
 
+}
+
+class TileX {
+  final Coords coords;
+  bool current;
+
+  TileX(this.coords, this.current);
+}
+
+class LevelX {
+  List children = [];
+  double zIndex;
+  CustomPoint origin;
+  double zoom;
+  CustomPoint translatePoint;
+  double scale;
 }
